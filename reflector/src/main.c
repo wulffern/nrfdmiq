@@ -26,8 +26,8 @@
  ********************************************************************/
 
 
-#include <zephyr.h>
-#include <init.h>
+//#include <zephyr.h>
+//#include <init.h>
 #include <nrf.h>
 #include <nrfx.h>
 #include "nrf_dm.h"
@@ -55,10 +55,10 @@ int main(void)
   while (1)
   {
 
-    nrf_dm_configure(&dm_config);
+    nrf_dm_status_t status  = nrf_dm_configure(&dm_config);
     debug_start();
     uint32_t timeout_us = 10e6;
-    uint8_t  status     = nrf_dm_proc_execute(timeout_us);
+    status     = nrf_dm_proc_execute(timeout_us);
     debug_stop();
 
     if(status == NRF_DM_STATUS_SUCCESS){

@@ -26,8 +26,8 @@
  ********************************************************************/
 
 
-#include <zephyr.h>
-#include <init.h>
+//#include <zephyr.h>
+//#include <init.h>
 #include <nrf.h>
 #include <nrfx.h>
 #include "nrf_dm.h"
@@ -46,9 +46,9 @@ int main(void)
 
   debug_init();
 
-    dm_init();
+  dm_init();
 
-dm_config = NRF_DM_DEFAULT_CONFIG;
+  dm_config = NRF_DM_DEFAULT_CONFIG;
   dm_config.role            = NRF_DM_ROLE_INITIATOR;
   dm_config.access_address  = 0x44ddaafa;
 
@@ -56,7 +56,6 @@ dm_config = NRF_DM_DEFAULT_CONFIG;
   {
 
     nrf_dm_status_t status = nrf_dm_configure(&dm_config);
-
 
     debug_start();
     uint32_t timeout_us = 5e6;

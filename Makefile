@@ -25,16 +25,39 @@
 ##
 ######################################################################
 
+sid_init = 685097948
+sid_refl = 685701409
+
+current_dir = $(shell pwd)
+
+nrfjprog = nrfjprog.exe
+ifeq ($(OSFLAG),win)
+ pycmd = /usr/bin/python3
+else
+ifeq ($(OSFLAG),linux)
+
+	nrfjprog = nrfjprog.exe
+	pycmd = python3
+else
+	nrfjprog = nrfjprog
+endif
+endif
+
 first:
 	cd reflector; west build -b nrf52833dk_nrf52833 -- -DCONF_FILE=prj.conf
 	cd initiator; west build -b nrf52833dk_nrf52833 -- -DCONF_FILE=prj.conf
 
 flashr:
-	cd reflector; west flash
+	cd reflector; west flash -i ${sid_refl}
+	${MAKE} -f ${current_dir}/Makefile reset SID=${sid_refl}
 
 flashi:
-	cd initiator; west flash
+	cd initiator; west flash -i ${sid_init}
+	${MAKE} -f ${current_dir}/Makefile reset SID=${sid_init}
 
+
+reset:
+	${nrfjprog} -p -s ${SID} && ${nrfjprog} -r -s ${SID}
 
 
 clean:
