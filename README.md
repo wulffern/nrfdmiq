@@ -74,12 +74,12 @@ python3 py/plot.py msave --com /dev/tty.usbmodem0006857014091 data/tvroom --coun
 ```
 
 ``` bash
-python3 py/plot.py impulsedir data/kitchen
+python3 py/plot.py impulsedir data/tvroom
 ```
 
-![](media/kitchen.png)
-
 ![](media/tvroom.png)
+
+![](media/kitchen.png)
 
 
 
