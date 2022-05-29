@@ -41,6 +41,7 @@ class report:
         self.phase_slope = self.obj["phase_slope[mm]"]/1000.0
         self.rssi_openspace = self.obj["rssi_openspace[mm]"]/1000.0
         self.best = self.obj["best[mm]"]/1000.0
+        self.highpres = self.obj["highpres[mm]"]/1000.0
 
         self.link_loss = self.obj["link_loss[dB]"]
 
@@ -94,7 +95,7 @@ def impulse(filename,com):
     plt.plot(r.impulse2_x*1e9,abs(r.impulse2)**2)
     plt.ylabel("Impulse Magnitude Squared")
     plt.xlabel("Delay [ns]")
-    plt.title("Estimated distance = %.2f" % (r.ifft))
+    plt.title("Distance [m]= %.2f, Link Loss [dB] = %d" % (r.ifft,r.link_loss))
 
     plt.grid()
     plt.show()

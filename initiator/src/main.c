@@ -123,7 +123,7 @@ void tones_to_json(char * str, float *array,uint32_t length){
   uart_put_string("]");
 }
 
-void nrf_dm_report_to_json(nrf_dm_report_t *dm_report){
+void nrf_dm_report_to_json(nrf_dm_report_t *dm_report,float distance){
   uart_put_string("{");
 
   //- Print tones
@@ -140,6 +140,7 @@ void nrf_dm_report_to_json(nrf_dm_report_t *dm_report){
   dist_to_json("phase_slope[mm]",dm_report->distance_estimates.mcpd.phase_slope);uart_put_char(',');
   dist_to_json("rssi_openspace[mm]",dm_report->distance_estimates.mcpd.rssi_openspace);uart_put_char(',');
   dist_to_json("best[mm]",dm_report->distance_estimates.mcpd.best);uart_put_char(',');
+  dist_to_json("highpres[mm]",((int)1000*distance));uart_put_char(',');
 
   //- Status params
   int_to_json("link_loss[dB]",dm_report->link_loss); uart_put_char(',');
@@ -186,9 +187,14 @@ int main(void)
     status     = nrf_dm_proc_execute(timeout_us);
     debug_stop();
 
+    float distance = 0;
+
     if(status == NRF_DM_STATUS_SUCCESS){
       nrf_dm_populate_report(&dm_report);
       nrf_dm_quality_t quality = nrf_dm_calc(&dm_report);
+
+      //- TODO: Something does not work with this yet, some missing symbols
+      //distance = nrf_dm_high_precision_calc(&dm_report);
 
     }else{
       //- Set quality to 100 if it's a failure
@@ -198,7 +204,7 @@ int main(void)
 
     //- Send report to UART
     uart_init();
-    nrf_dm_report_to_json(&dm_report);
+    nrf_dm_report_to_json(&dm_report,distance);
     uart_uninit();
 
   }
