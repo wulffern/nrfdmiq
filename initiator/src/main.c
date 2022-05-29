@@ -173,6 +173,23 @@ int main(void)
 
   while (1)
   {
+    //Clear previous result
+    dm_report.link_loss = 0;
+    dm_report.rssi_local = 0;
+    dm_report.rssi_remote = 0;
+    dm_report.txpwr_local = 0;
+    dm_report.txpwr_remote = 0;
+    dm_report.quality = 100;
+    dm_report.distance_estimates.mcpd.ifft = 0;
+    dm_report.distance_estimates.mcpd.phase_slope = 0;
+    dm_report.distance_estimates.mcpd.rssi_openspace = 0;
+    dm_report.distance_estimates.mcpd.best = 0;
+    for(int i=0;i<80;i++){
+      dm_report.iq_tones->i_local[i] =0;
+      dm_report.iq_tones->q_local[i] =0;
+      dm_report.iq_tones->i_remote[i] =0;
+      dm_report.iq_tones->q_remote[i] =0;
+    }
 
     //- Wait for a character, any character
     uart_init();
