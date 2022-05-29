@@ -62,9 +62,9 @@ int main(void)
     debug_stop();
 
     if(status == NRF_DM_STATUS_SUCCESS){
-      debug_pulse(10e6);
+      debug_pulse(10);
     }else{
-      debug_pulse(0.5e6);
+      debug_pulse(5);
 
     }
 

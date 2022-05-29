@@ -33,19 +33,137 @@
 #include "nrf_dm.h"
 #include "nrfx_config.h"
 #include "nrfx_clock.h"
+#include "nrfx_uarte.h"
+#include <stdint.h>
+#include <stdbool.h>
 
+
+#ifndef TXD_PIN
+#define TXD_PIN 6
+#endif
+
+#ifndef RXD_PIN
+#define RXD_PIN 8
+#endif
+
+
+// Common functions, probably need to copy this file if you're on windows
 #include "dm.c"
 
-static nrf_dm_config_t dm_config;
 
+//------------------------------------------------------------------
+// Setup UARTE to PC
+//------------------------------------------------------------------
+static nrfx_uarte_t instance = NRFX_UARTE_INSTANCE(0);
+
+void uart_init(void){
+    nrfx_uarte_config_t config = NRFX_UARTE_DEFAULT_CONFIG(TXD_PIN, RXD_PIN);
+    config.baudrate            = NRF_UARTE_BAUDRATE_115200;
+    nrfx_uarte_init(&instance, &config, NULL);
+}
+
+void uart_uninit(void){
+    nrfx_uarte_uninit(&instance);
+}
+
+void uart_put_string(const char * string)
+{
+  while (*string != '\0')
+  {
+    uart_put_char(*string++);
+  }
+}
+
+int uart_cbprint(int ch, void * ctx){
+  nrfx_uarte_tx(&instance, &ch, 1);
+}
+
+void uart_put_char(uint8_t ch)
+{
+  nrfx_uarte_tx(&instance, &ch, 1);
+}
+
+bool uart_chars_available(void)
+{
+  return nrfx_uarte_rx_ready(&instance);
+}
+
+void uart_get_char(uint8_t * p_ch)
+{
+  nrfx_uarte_errorsrc_get(&instance);
+  nrfx_uarte_rx(&instance, p_ch, 1);
+}
+
+void dist_to_json(char *str, float f){
+
+  int d = ((int)1000*f);
+  cbprintf(&uart_cbprint, 0, "\"%s\" : %d",str, d);
+}
+
+void int_to_json(char *str, int d){
+  cbprintf(&uart_cbprint, 0, "\"%s\" : %d",str, d);
+}
+
+void tones_to_json(char * str, float *array,uint32_t length){
+
+  uart_put_string("\"");
+  uart_put_string(str);
+  uart_put_string("\":[");
+  for (uint32_t i = 0; i < length; i++)
+  {
+    //- Assume 10-bit ADC, and scale resolution to 15-bit, should be more than enough precision
+    int f = ((int)32*array[i]);
+    cbprintf(&uart_cbprint, 0, "%d", f);
+
+    if ((i + 1) < length)
+    {
+      uart_put_string(",");
+    }
+  }
+  uart_put_string("]");
+}
+
+void nrf_dm_report_to_json(nrf_dm_report_t *dm_report){
+  uart_put_string("{");
+
+  //- Print tones
+
+  tones_to_json("i_local",&dm_report->iq_tones->i_local[0],80); uart_put_string(",");
+  tones_to_json("q_local",&dm_report->iq_tones->q_local[0],80); uart_put_string(",");
+  tones_to_json("i_remote",&dm_report->iq_tones->i_remote[0],80); uart_put_string(",");
+  tones_to_json("q_remote",&dm_report->iq_tones->q_remote[0],80); uart_put_string(",");
+
+  //- Print tone_sinr
+  //- Print ranging mode
+  //- Print distance
+  dist_to_json("ifft[mm]",dm_report->distance_estimates.mcpd.ifft);uart_put_char(',');
+  dist_to_json("phase_slope[mm]",dm_report->distance_estimates.mcpd.phase_slope);uart_put_char(',');
+  dist_to_json("rssi_openspace[mm]",dm_report->distance_estimates.mcpd.rssi_openspace);uart_put_char(',');
+  dist_to_json("best[mm]",dm_report->distance_estimates.mcpd.best);uart_put_char(',');
+
+  //- Status params
+  int_to_json("link_loss[dB]",dm_report->link_loss); uart_put_char(',');
+  int_to_json("rssi_local[dB]",dm_report->rssi_local); uart_put_char(',');
+  int_to_json("rssi_remote[dB]",dm_report->rssi_remote); uart_put_char(',');
+  int_to_json("txpwr_local[dB]",dm_report->txpwr_local); uart_put_char(',');
+  int_to_json("txpwr_remote[dB]",dm_report->txpwr_remote); uart_put_char(',');
+  int_to_json("quality",dm_report->quality);
+  uart_put_string("}\n\r");
+}
+
+//------------------------------------------------------------------
+// Main loop
+//------------------------------------------------------------------
+
+static nrf_dm_config_t dm_config;
+static nrf_dm_report_t dm_report;
 
 int main(void)
 {
 
+  //- Functions in dm.c to init stuff
   dm_clock_init();
-
   debug_init();
-
   dm_init();
 
   dm_config = NRF_DM_DEFAULT_CONFIG;
@@ -55,18 +173,33 @@ int main(void)
   while (1)
   {
 
-    nrf_dm_status_t status = nrf_dm_configure(&dm_config);
+    //- Wait for a character, any character
+    uart_init();
+    char c = 0;
+    uart_get_char(&c);
+    uart_uninit();
 
+    //- Execute a ranging
+    nrf_dm_status_t status = nrf_dm_configure(&dm_config);
     debug_start();
-    uint32_t timeout_us = 5e6;
+    uint32_t timeout_us = 1e5;
     status     = nrf_dm_proc_execute(timeout_us);
     debug_stop();
 
     if(status == NRF_DM_STATUS_SUCCESS){
-      debug_pulse(10e6);
+      nrf_dm_populate_report(&dm_report);
+      nrf_dm_quality_t quality = nrf_dm_calc(&dm_report);
+
     }else{
-      debug_pulse(0.5e6);
+      //- Set quality to 100 if it's a failure
+      dm_report.quality = 100;
+      debug_pulse(10);
     }
+
+    //- Send report to UART
+    uart_init();
+    nrf_dm_report_to_json(&dm_report);
+    uart_uninit();
 
   }
 }

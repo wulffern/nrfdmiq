@@ -28,6 +28,10 @@
 
 
 
+
+
+
+
 #define DBGPIN_1  30
 #define DBGPIN_2  31
 
@@ -80,9 +84,9 @@ void debug_stop(){
 void dm_init(){
     //- Setup Nordic Distance Toolbox
 
-  uint8_t ppi_ch[2] = {0 ,1 };
+  uint8_t ppi_ch[2] = {0,1};
   nrf_dm_ppi_config_t ppi_conf = {
-  .ppi_chan_count = 1,
+  .ppi_chan_count = 2,
   .ppi_chan = &ppi_ch[0],
 };
 
