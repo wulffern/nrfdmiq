@@ -65,6 +65,22 @@ Known issues:
 Don't expect any, but at the same time, don't be afraid to ask.
 
 
+## Examples 
+
+Collect some data
+
+``` bash
+python3 py/plot.py msave --com /dev/tty.usbmodem0006857014091 data/tvroom --count 100
+```
+
+``` bash
+python3 py/plot.py impulsedir data/kitchen
+```
+
+![](media/kitchen.png)
+
+![](media/tvroom.png)
+
 
 
 
