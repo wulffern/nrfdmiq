@@ -172,7 +172,7 @@ def msave(dirname,com,count):
         print("Distance [m]: %.2f, Quality : %d" % (r.ifft,r.quality))
         if(r.quality == 0):
             r.save(dirname + os.path.sep +  fname)
-        time.sleep(0.2)
+        time.sleep(0.1)
 
 @cli.command()
 @click.option("--filename",default=None)
@@ -199,7 +199,8 @@ def impulse(filename,com):
 
 @cli.command()
 @click.argument("dirname")
-def impulsedir(dirname):
+@click.option("--show",default=False,help= "Show plot")
+def impulsedir(dirname,show):
 
     files = glob.glob(dirname + os.path.sep +"*.json")
 
@@ -233,15 +234,19 @@ def impulsedir(dirname):
     ax[0].imshow(gradient, aspect='auto', cmap=plt.get_cmap(cmap_name),extent=[0,maxdist,1,0])
     ax[0].get_yaxis().set_visible(False)
     ax[0].set_xlabel("Distance [m]")
+    dist_avg = 0
     for r in reports:
 
         dist = r.ifft
+        dist_avg +=dist
         delay = dist/(c)*1e9
 
-        #xx = r.impulse_x*ns - dist/(c)*ns
-        xx = r.impulse_x*ns
+        xx = r.impulse_x*ns - dist/(c)*ns
+        #xx = r.impulse_x*ns
         ax[1].plot(xx,np.abs(r.impulse**2),color=colors[int(idmult*dist)],marker="None",linestyle="solid",alpha=0.3)
         ax[2].plot(r.link_loss,r.delaySpread*ns,marker="o",color="black")
+    dist_avg = dist_avg/len(reports)
+    ax[0].set_title(dirname + ", Average distance = %.2f m, %d measurements" % (dist_avg,len(reports)))
     ax[1].set_ylabel("Power")
     ax[1].grid(True)
     ax[1].set_xlim(-10,200)
@@ -249,9 +254,14 @@ def impulsedir(dirname):
     ax[2].set_ylabel("RMS delay spread ")
     ax[2].set_xlabel(" Link loss [dB]")
 
-    plt.tight_layout()
+
+
     plt.grid()
-    plt.show()
+    plt.tight_layout()
+
+    plt.savefig("media/"+ dirname.replace(os.path.sep,"_") + ".png")
+    if(show):
+        plt.show()
 
 
 

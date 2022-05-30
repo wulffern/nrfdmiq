@@ -25,16 +25,36 @@
 ##
 ######################################################################
 
+#-  Copy from https://gist.github.com/sighingnow/deee806603ec9274fd47
+OSFLAG 				:=
+ifeq ($(OS),Windows_NT)
+	OSFLAG = win
+else
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Linux)
+	OSFLAG = linux
+	endif
+	ifeq ($(UNAME_S),Darwin)
+	OSFLAG = osx
+	endif
+
+endif
+
 sid_refl = 685097948
 sid_init = 685701409
 
 current_dir = $(shell pwd)
 
 nrfjprog = nrfjprog.exe
+
 ifeq ($(OSFLAG),win)
- pycmd = /usr/bin/python3
+	pycmd = /usr/bin/python3
+	sid_refl = 685649956
+	sid_init = 685965072
+
 else
 ifeq ($(OSFLAG),linux)
+
 
 	nrfjprog = nrfjprog.exe
 	pycmd = python3
@@ -49,11 +69,11 @@ first:
 
 flashr:
 	cd reflector; west flash -i ${sid_refl}
-	${MAKE} -f ${current_dir}/Makefile reset SID=${sid_refl}
+	${MAKE} -f Makefile reset SID=${sid_refl}
 
 flashi:
 	cd initiator; west flash -i ${sid_init}
-	${MAKE} -f ${current_dir}/Makefile reset SID=${sid_init}
+	${MAKE} -f Makefile reset SID=${sid_init}
 
 
 reset:
