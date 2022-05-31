@@ -265,7 +265,5 @@ def impulsedir(dirname,show):
 
 
 
-
-
 if(__name__ == "__main__"):
     cli()
