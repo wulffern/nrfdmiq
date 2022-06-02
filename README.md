@@ -67,19 +67,21 @@ Don't expect any, but at the same time, don't be afraid to ask.
 
 ## Examples 
 
-Collect some data
+Collect some data. In the attached dataset I placed one DK on my Roomba iRobot,
+and the other stationary, and let the collection run for a while
 
 ``` bash
 python3 py/plot.py msave --com /dev/tty.usbmodem0006857014091 data/tvroom --count 100
 ```
 
 ``` bash
-python3 py/plot.py impulsedir data/tvroom
+python3 py/plot.py impulsedir data/irobot
 ```
 
-![](media/tvroom.png)
+All the data from that run is in `data/irobot`
 
-![](media/kitchen.png)
+![](media/data_irobot.png)
+
 
 
 
