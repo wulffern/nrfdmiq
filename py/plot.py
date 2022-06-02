@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-#!/usr/bin/env python3
-
 import click
 import serial
 import numpy as np
@@ -31,6 +29,7 @@ class report:
             self.readFromFile(filename)
 
     def readFromFile(self,filename):
+        self.filename = filename
         with open(filename) as fi:
             self.obj = json.load(fi)
 
@@ -126,17 +125,19 @@ class report:
     def calcDelaySpread(self):
 
         y = self.impulse
-        y = y/np.max(y)
 
         s = np.abs(y**2)
 
+        s = s/np.max(s)
+
         #- Remove the lowest values. They are likely artifacts of IFFT.
-        s[s < 0.002] = 0
+        s[s < 0.01] = 0
 
         pwr = np.sum(s)
         p1 = np.sum(np.multiply(s,self.impulse_x))
         p2 = np.sum(np.multiply(s,self.impulse_x**2))
         rms = np.sqrt(p2/pwr - (p1/pwr)**2)
+
         self.delaySpread = rms
 
 
