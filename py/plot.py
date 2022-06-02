@@ -110,7 +110,6 @@ class report:
 
         am = np.argmax(np.abs(self.impulse))
 
-        #print("Dist(fft) %.2f, Dist(dev) %.2f" % (self.impulse_x[am]*self.c,self.ifft))
 
 
     # Based on Statistical Properties of the RMS Delay-Spread of Mobile Radio Channels with Independent Rayleigh-Fading Paths
