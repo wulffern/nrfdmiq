@@ -56,13 +56,15 @@ The `py/plot.py` can read the JSON directly from device, or from file to produce
 
 ## Support
 
-Known issues:
+Don't expect any, but at the same time, don't be afraid to ask.
+
+## Known issues
 
 - common/src/dm.c is symlinked, so it will break on windows 
 - You need to set the `sid_refl` and `sid_init` in the Makefile to the correct ID's for your
   dev-kits 
 
-Don't expect any, but at the same time, don't be afraid to ask.
+
 
 
 ## Examples 
