@@ -129,21 +129,16 @@ class report:
         y = self.impulse
         y = y/np.max(y)
 
-
         s = np.abs(y**2)
 
-
-        #- Remove products below 1% to reduce
-        s[s < 0.001] = 0
-
+        #- Remove the lowest values. They are likely artifacts of IFFT.
+        s[s < 0.002] = 0
 
         pwr = np.sum(s)
         p1 = np.sum(np.multiply(s,self.impulse_x))
         p2 = np.sum(np.multiply(s,self.impulse_x**2))
         rms = np.sqrt(p2/pwr - (p1/pwr)**2)
         self.delaySpread = rms
-
-        print(self.delaySpread*1e9)
 
 
     def calc(self):
@@ -255,8 +250,9 @@ def impulsedir(dirname,show):
 
         xx = r.impulse_x*ns - delay
         y = np.abs(r.impulse**2)
+        y = y/np.max(y)
 
-        ax[1].plot(xx,y/max(y),color=colors[int(idmult*dist)],marker="None",linestyle="solid",alpha=0.3)
+        ax[1].plot(xx,y,color=colors[int(idmult*dist)],marker="None",linestyle="solid",alpha=0.3)
         ax[2].plot(r.link_loss,r.delaySpread*ns,marker="o",color="black")
     dist_avg = dist_avg/len(reports)
     ax[0].set_title(dirname + ", Average distance = %.2f m, %d measurements" % (dist_avg,len(reports)))
