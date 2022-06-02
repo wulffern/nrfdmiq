@@ -97,16 +97,16 @@ class report:
     def calcImpulse2(self):
         N = 2048
         yfft = np.fft.ifft(self.transfer2,N)
-        yf = yfft[1:((int)(len(yfft)/2))]
+        yf = yfft[0:((int)(len(yfft)/2))]
         self.impulse2 = yf
-        self.impulse2_x = np.arange(0,N/2-1)/N/2/1e6
+        self.impulse2_x = np.arange(0,N/2)/N/2/1e6
 
     def calcImpulse(self):
         N = 2048
         yfft = np.fft.ifft(self.transfer,N)
-        yf = yfft[1:((int)(len(yfft)/2))]
+        yf = yfft[0:((int)(len(yfft)/2))]
         self.impulse = yf
-        self.impulse_x = np.arange(0,N/2-1)/N/1e6
+        self.impulse_x = np.arange(0,N/2)/N/1e6
 
         am = np.argmax(np.abs(self.impulse))
 
@@ -125,13 +125,25 @@ class report:
         self.delaySpread2 = rms
 
     def calcDelaySpread(self):
-        s = np.abs(self.impulse)**2
+
+        y = self.impulse
+        y = y/np.max(y)
+
+
+        s = np.abs(y**2)
+
+
+        #- Remove products below 1% to reduce
+        s[s < 0.001] = 0
+
 
         pwr = np.sum(s)
         p1 = np.sum(np.multiply(s,self.impulse_x))
         p2 = np.sum(np.multiply(s,self.impulse_x**2))
         rms = np.sqrt(p2/pwr - (p1/pwr)**2)
         self.delaySpread = rms
+
+        print(self.delaySpread*1e9)
 
 
     def calc(self):
@@ -239,17 +251,17 @@ def impulsedir(dirname,show):
 
         dist = r.ifft
         dist_avg +=dist
-        delay = dist/(c)*1e9
+        delay = dist/(c)*ns
 
-        xx = r.impulse_x*ns - dist/(c)*ns
-        #xx = r.impulse_x*ns
-        ax[1].plot(xx,np.abs(r.impulse**2),color=colors[int(idmult*dist)],marker="None",linestyle="solid",alpha=0.3)
+        xx = r.impulse_x*ns - delay
+        y = np.abs(r.impulse**2)
+
+        ax[1].plot(xx,y/max(y),color=colors[int(idmult*dist)],marker="None",linestyle="solid",alpha=0.3)
         ax[2].plot(r.link_loss,r.delaySpread*ns,marker="o",color="black")
     dist_avg = dist_avg/len(reports)
     ax[0].set_title(dirname + ", Average distance = %.2f m, %d measurements" % (dist_avg,len(reports)))
     ax[1].set_ylabel("Power")
     ax[1].grid(True)
-    ax[1].set_xlim(-10,200)
     ax[1].set_xlabel("Impulse response - delay of distance [ns]")
     ax[2].set_ylabel("RMS delay spread ")
     ax[2].set_xlabel(" Link loss [dB]")
