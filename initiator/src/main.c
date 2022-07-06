@@ -123,6 +123,24 @@ void tones_to_json(char * str, float *array,uint32_t length){
   uart_put_string("]");
 }
 
+void sinr_to_json(char * str, nrf_dm_sinr_indicator_t *array,uint32_t length){
+
+  uart_put_string("\"");
+  uart_put_string(str);
+  uart_put_string("\":[");
+  for (uint32_t i = 0; i < length; i++)
+  {
+
+    cbprintf(&uart_cbprint, 0, "%d", ((int)array[i]));
+
+    if ((i + 1) < length)
+    {
+      uart_put_string(",");
+    }
+  }
+  uart_put_string("]");
+}
+
 void nrf_dm_report_to_json(nrf_dm_report_t *dm_report,float distance){
   uart_put_string("{");
 
@@ -133,7 +151,11 @@ void nrf_dm_report_to_json(nrf_dm_report_t *dm_report,float distance){
   tones_to_json("i_remote",&dm_report->iq_tones->i_remote[0],80); uart_put_string(",");
   tones_to_json("q_remote",&dm_report->iq_tones->q_remote[0],80); uart_put_string(",");
 
+
   //- Print tone_sinr
+  sinr_to_json("sinr_local",&dm_report->tone_sinr_indicators.sinr_indicator_local[0],80); uart_put_string(",");
+  sinr_to_json("sinr_remote",&dm_report->tone_sinr_indicators.sinr_indicator_remote[0],80); uart_put_string(",");
+
   //- Print ranging mode
   //- Print distance
   dist_to_json("ifft[mm]",dm_report->distance_estimates.mcpd.ifft);uart_put_char(',');
@@ -190,6 +212,10 @@ int main(void)
       dm_report.iq_tones->i_remote[i] =0;
       dm_report.iq_tones->q_remote[i] =0;
     }
+    for(int i=0;i<80;i++){
+      dm_report.tone_sinr_indicators.sinr_indicator_local[i] =0;
+      dm_report.tone_sinr_indicators.sinr_indicator_remote[i] =0;
+    }
 
     //- Wait for a character, any character
     uart_init();
@@ -200,7 +226,7 @@ int main(void)
     //- Execute a ranging
     nrf_dm_status_t status = nrf_dm_configure(&dm_config);
     debug_start();
-    uint32_t timeout_us = 1e5;
+    uint32_t timeout_us = 0.5e6;
     status     = nrf_dm_proc_execute(timeout_us);
     debug_stop();
 

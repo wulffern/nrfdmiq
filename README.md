@@ -60,11 +60,9 @@ Don't expect any, but at the same time, don't be afraid to ask.
 
 ## Known issues
 
-- common/src/dm.c is symlinked, so it will break on windows 
 - You need to set the `sid_refl` and `sid_init` in the Makefile to the correct ID's for your
   dev-kits 
-
-
+- I don't want the nrf/subsys/dm, so I modify those Kconfig and CMakeList.txt
 
 
 ## Examples 

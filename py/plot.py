@@ -9,6 +9,8 @@ import os
 import datetime
 import glob
 import time
+import re
+import pandas as pd
 
 class report:
 
@@ -23,6 +25,7 @@ class report:
         pass
 
     def readFromFileOrCom(self,filename = None,com = None):
+        
         if(com is not None):
             self.readFromCom(com)
         else:
@@ -37,7 +40,13 @@ class report:
         with serial.Serial(com, baudrate=115200, timeout=10) as ser:
             ser.write(bytes('0','utf-8'))
             ret = ser.read_until(bytes("\n",'utf-8'))
-        self.obj = json.loads(ret.decode('utf-8'))
+
+
+        try:
+            self.obj = json.loads(ret.decode('utf-8'))
+        except Exception as e:
+            print(ret.decode('utf-8'))
+            raise(e)
 
     def save(self,filename):
         with open(filename,"w") as fo:
@@ -57,6 +66,15 @@ class report:
         self.q_local = np.array(self.obj["q_local"])
         self.i_remote = np.array(self.obj["i_remote"])
         self.q_remote = np.array(self.obj["q_remote"])
+
+        self.sinr_remote = np.zeros(2)
+        if("sinr_remote" in self.obj):
+            self.sinr_remote = np.array(self.obj["sinr_remote"])
+
+        self.sinr_local = np.zeros(2)
+        if("sinr_local" in self.obj):
+            self.sinr_local = np.array(self.obj["sinr_local"])
+
 
     #- Calculate transferfunction of channel squared
     def calcTransfer2(self):
@@ -176,8 +194,11 @@ def msave(dirname,com,count):
         r = report()
         r.readFromCom(com)
         r.load()
-        print("Distance [m]: %.2f, Quality : %d" % (r.ifft,r.quality))
-        if(r.quality == 0):
+        sinr_r = r.sinr_remote.sum()
+        sinr_l = r.sinr_local.sum()
+
+        print("Distance [m]: %.2f, Quality : %d, SINR Remote : %d, SINR Local : %d" % (r.ifft,r.quality,sinr_r,sinr_l))
+        if(r.quality <=1 and sinr_r < 5 and sinr_l < 5 ):
             r.save(dirname + os.path.sep +  fname)
         time.sleep(0.1)
 
@@ -223,7 +244,7 @@ def impulsedir(dirname,show):
         r.calc()
         reports.append(r)
 
-    fig, ax = plt.subplots(3,1,figsize=(10,6), gridspec_kw={'height_ratios': [0.3, 2,2]})
+    fig, ax = plt.subplots(4,1,figsize=(10,8), gridspec_kw={'height_ratios': [0.3, 2,2,2]})
     cmap_name = "viridis_r"
     cmap = plt.get_cmap(cmap_name)
     colors = cmap.colors
@@ -232,7 +253,7 @@ def impulsedir(dirname,show):
     gradient = np.vstack((gradient, gradient))
 
     N = len(colors)
-    maxdist = 30
+    maxdist = 50
     idmult = N/maxdist
     c= 299792458
     ns =1e9
@@ -254,22 +275,58 @@ def impulsedir(dirname,show):
 
         ax[1].plot(xx,y,color=colors[int(idmult*dist)],marker="None",linestyle="solid",alpha=0.3)
         ax[2].plot(r.link_loss,r.delaySpread*ns,marker="o",color="black")
+        ax[3].plot(r.ifft,r.delaySpread*ns,marker="o",color="black")
     dist_avg = dist_avg/len(reports)
     ax[0].set_title(dirname + ", Average distance = %.2f m, %d measurements" % (dist_avg,len(reports)))
     ax[1].set_ylabel("Power")
     ax[1].grid(True)
+    ax[2].grid(True)
+    ax[3].grid(True)
     ax[1].set_xlabel("Impulse response - delay of distance [ns]")
     ax[2].set_ylabel("RMS delay spread ")
+    ax[3].set_ylabel("RMS delay spread ")
     ax[2].set_xlabel(" Link loss [dB]")
-
-
-
-    plt.grid()
+    ax[3].set_xlabel(" Estimated distance [m]")
     plt.tight_layout()
 
     plt.savefig("media/"+ dirname.replace(os.path.sep,"_") + ".png")
     if(show):
         plt.show()
+
+
+@cli.command()
+@click.argument("dirname")
+@click.option("--show",default=False,help= "Show plot")
+def timedir(dirname,show):
+
+    files = glob.glob(dirname + os.path.sep +"*.json")
+
+    distance = list()
+    time = list()
+
+
+
+    for f in files:
+        r = report()
+        r.readFromFile(f)
+        r.load()
+        distance.append(r.ifft)
+        t = os.path.basename(f).replace(".json","")
+        dt = datetime.datetime.fromtimestamp(int(float(t)))
+        time.append(dt)
+
+
+    s = pd.Series(data=distance,index=time)
+    #plt.plot(time,distance)
+    s.plot()
+    plt.show()
+
+
+
+
+
+
+
 
 
 

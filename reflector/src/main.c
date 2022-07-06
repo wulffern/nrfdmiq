@@ -57,7 +57,7 @@ int main(void)
 
     nrf_dm_status_t status  = nrf_dm_configure(&dm_config);
     debug_start();
-    uint32_t timeout_us = 10e6;
+    uint32_t timeout_us = 1e6;
     status     = nrf_dm_proc_execute(timeout_us);
     debug_stop();
 
