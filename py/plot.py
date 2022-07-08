@@ -198,7 +198,7 @@ def msave(dirname,com,count):
         sinr_l = r.sinr_local.sum()
 
         print("Distance [m]: %.2f, Quality : %d, SINR Remote : %d, SINR Local : %d" % (r.ifft,r.quality,sinr_r,sinr_l))
-        if(r.quality <=1 and sinr_r < 5 and sinr_l < 5 ):
+        if(r.quality == 0 and sinr_r < 5 and sinr_l < 5 ):
             r.save(dirname + os.path.sep +  fname)
         time.sleep(0.1)
 
@@ -244,7 +244,7 @@ def impulsedir(dirname,show):
         r.calc()
         reports.append(r)
 
-    fig, ax = plt.subplots(4,1,figsize=(10,8), gridspec_kw={'height_ratios': [0.3, 2,2,2]})
+    fig, ax = plt.subplots(5,1,figsize=(10,10), gridspec_kw={'height_ratios': [0.3, 2,2,2,2]})
     cmap_name = "viridis_r"
     cmap = plt.get_cmap(cmap_name)
     colors = cmap.colors
@@ -266,6 +266,8 @@ def impulsedir(dirname,show):
     for r in reports:
 
         dist = r.ifft
+        if(dist < 1):
+            continue
         dist_avg +=dist
         delay = dist/(c)*ns
 
@@ -276,17 +278,21 @@ def impulsedir(dirname,show):
         ax[1].plot(xx,y,color=colors[int(idmult*dist)],marker="None",linestyle="solid",alpha=0.3)
         ax[2].plot(r.link_loss,r.delaySpread*ns,marker="o",color="black")
         ax[3].plot(r.ifft,r.delaySpread*ns,marker="o",color="black")
+        ax[4].semilogx(r.ifft,r.link_loss,marker="o",color="black")
     dist_avg = dist_avg/len(reports)
     ax[0].set_title(dirname + ", Average distance = %.2f m, %d measurements" % (dist_avg,len(reports)))
     ax[1].set_ylabel("Power")
     ax[1].grid(True)
     ax[2].grid(True)
     ax[3].grid(True)
+    ax[4].grid(True)
     ax[1].set_xlabel("Impulse response - delay of distance [ns]")
-    ax[2].set_ylabel("RMS delay spread ")
-    ax[3].set_ylabel("RMS delay spread ")
+    ax[2].set_ylabel("RMS delay spread [ns]")
+    ax[3].set_ylabel("RMS delay spread [ns]")
+    ax[4].set_ylabel("Link loss [dB]")
     ax[2].set_xlabel(" Link loss [dB]")
     ax[3].set_xlabel(" Estimated distance [m]")
+    ax[4].set_xlabel(" Estimated distance [m]")
     plt.tight_layout()
 
     plt.savefig("media/"+ dirname.replace(os.path.sep,"_") + ".png")
