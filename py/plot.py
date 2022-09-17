@@ -303,6 +303,45 @@ def impulsedir(dirname,show):
 @cli.command()
 @click.argument("dirname")
 @click.option("--show",default=False,help= "Show plot")
+def magnitudedir(dirname,show):
+
+    files = glob.glob(dirname + os.path.sep +"*.json")
+
+    reports = list()
+
+    for f in files:
+        r = report()
+        r.readFromFile(f)
+        r.load()
+
+        if(r.quality > 0):
+            continue
+        r.calc()
+        reports.append(r)
+
+    fig, axe = plt.subplots(1,1,figsize=(10,10))
+
+    ax = list()
+    ax.append(axe)
+    ax[0].set_title(dirname)
+    dist_avg = 0
+    for r in reports:
+
+        max = np.max(np.abs(r.transfer2))
+        mag = 20*np.log10(np.abs(r.transfer2/max))
+        ax[0].plot(mag)
+
+    ax[0].grid(True)
+    ax[0].set_ylabel("Magnitude [dBFS]")
+    plt.tight_layout()
+
+    plt.savefig("media/"+ dirname.replace(os.path.sep,"_mag_") + ".png")
+    if(show):
+        plt.show()
+
+@cli.command()
+@click.argument("dirname")
+@click.option("--show",default=False,help= "Show plot")
 def timedir(dirname,show):
 
     files = glob.glob(dirname + os.path.sep +"*.json")
@@ -326,13 +365,6 @@ def timedir(dirname,show):
     #plt.plot(time,distance)
     s.plot()
     plt.show()
-
-
-
-
-
-
-
 
 
 

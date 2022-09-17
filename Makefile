@@ -49,8 +49,10 @@ nrfjprog = nrfjprog.exe
 
 ifeq ($(OSFLAG),win)
 	pycmd = /usr/bin/python3
-	sid_refl = 685649956
-	sid_init = 685965072
+	#sid_refl = 685649956
+	#sid_init = 685965072
+	sid_init = 685369056
+	sid_refl = 685868684
 
 else
 ifeq ($(OSFLAG),linux)
