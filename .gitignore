@@ -1,3 +1,6 @@
 .DS_Store
 build
 .vscode
+data
+media
+hex
