@@ -82,6 +82,9 @@ reset:
 	${nrfjprog} -p -s ${SID} && ${nrfjprog} -r -s ${SID}
 
 
+doc:
+	pandoc --from gfm README.md -o README.html
+
 clean:
 	rm -rf initiator/build
 	rm -rf reflector/build

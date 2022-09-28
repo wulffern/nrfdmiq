@@ -15,11 +15,31 @@ For example, estimating the impulse response between two devices
 
 ![](media/impulse.png)
 
+## Expected knowledge
+This repository assume you know a few things, like
+* git 
+* C
+* Python programming and how to get missing packages with python3 -m pip install <package>
+* installing NRF Connect SDK
+* Basics of communcation
+
 
 ## Getting started
 
 You need [Nordic Connect
 SDK](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/index.html)
+
+- Via the nRF Connect for Desktop open the Toolchain manager
+- Install latest NRF Connect SDK. This repo is tested with v2.1.0
+- In the Toolchain Manager, open command prompt 
+- In the command prompt, make sure the environment is loaded, for example `c:\ncs\v2.0.0\zephyr\zephyr-env.cmd`
+- Try the steps below. If you don't have make, then you can look in the Makefile
+for the commands, for example 
+``` bash
+    cd reflector
+    west build -b nrf52833dk_nrf52833 -- -DCONF_FILE=prj.conf
+```
+
 
 Once everything is installed, then you should be able to do
 
@@ -54,24 +74,13 @@ The `py/plot.py` can read the JSON directly from device, or from file to produce
 
     python3 py/plot.py impulse --com /dev/tty.usbmodem0006857014091
 
-## Support
-
-Don't expect any, but at the same time, don't be afraid to ask.
-
-## Known issues
-
-- You need to set the `sid_refl` and `sid_init` in the Makefile to the correct ID's for your
-  dev-kits 
-- I don't want the nrf/subsys/dm, so I modify those Kconfig and CMakeList.txt
-
-
 ## Examples 
 
 Collect some data. In the attached dataset I placed one DK on my Roomba iRobot,
 and the other stationary, and let the collection run for a while
 
 ``` bash
-python3 py/plot.py msave --com /dev/tty.usbmodem0006857014091 data/tvroom --count 100
+python3 py/plot.py msave --com /dev/tty.usbmodem0006857014091 data/irobot --count 100
 ```
 
 ``` bash
@@ -84,6 +93,42 @@ All the data from that run is in `data/irobot`
 
 
 
+## Support
 
+Don't expect any, but at the same time, don't be afraid to ask.
 
+## Known issues
+
+- You need to set the `sid_refl` and `sid_init` in the Makefile to the correct ID's for your
+  dev-kits 
+- I don't want the nrf/subsys/dm, so I modify those Kconfig and CMakeList.txt
+- On windows I've seen problems with the common/src/dm.c . That's included with
+  a symbolic link, and that does not always work on Windows. The solution is to
+  copy the common/src/dm.c file to the reflector/src/ and initiator/src/ directory
+
+## Wanted features
+If you feel like it, fork and send pull requests. I would like the following
+future features
+
+### Support for multiple reflectors
+Today the AA is hardcoded in initiator and reflector, however, it should be
+possible to use the buttons on the DK to change the AA. One way to do it could
+be
+- On Reflector. On button press, increment the AA
+- On Initiator. On button press, increment the number of AA's the initiator
+  would loop through
+  
+### Low power reflector 
+The reflector would be battery powered, right now it camps on a frequency and
+waits for a packet from initiator. If it times out, it will restart the radio,
+and camp again. This draws mA of current. 
+
+One option would be to setup BLE advertizing on the reflectors with a low advertizing interval,
+for example 4 seconds. The initiator could scan for advertiziers. Once it sees
+an advertizer it could respond, and wake the reflector. The reflector could stay
+on for maybe 10 seconds or more, to make sure that the inititator could do the
+ranging. 
+
+This is similar, but not the same, as is done in the
+[nrf_dm](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/2.0.0/nrf/samples/bluetooth/nrf_dm/README.html) example.
 
