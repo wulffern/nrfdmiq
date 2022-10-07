@@ -123,6 +123,24 @@ void tones_to_json(char * str, float *array,uint32_t length){
   uart_put_string("]");
 }
 
+void uint8array_to_json(char * str, uint8_t *array,uint32_t length){
+
+  uart_put_string("\"");
+  uart_put_string(str);
+  uart_put_string("\":[");
+  for (uint32_t i = 0; i < length; i++)
+  {
+
+    cbprintf(&uart_cbprint, 0, "%u", array[i]);
+
+    if ((i + 1) < length)
+    {
+      uart_put_string(",");
+    }
+  }
+  uart_put_string("]");
+}
+
 void sinr_to_json(char * str, nrf_dm_sinr_indicator_t *array,uint32_t length){
 
   uart_put_string("\"");
@@ -141,7 +159,7 @@ void sinr_to_json(char * str, nrf_dm_sinr_indicator_t *array,uint32_t length){
   uart_put_string("]");
 }
 
-void nrf_dm_report_to_json(nrf_dm_report_t *dm_report,float distance){
+void nrf_dm_report_to_json(nrf_dm_report_t *dm_report,float distance,int32_t duration, uint8_t *hopping_sequence){
   uart_put_string("{");
 
   //- Print tones
@@ -150,6 +168,7 @@ void nrf_dm_report_to_json(nrf_dm_report_t *dm_report,float distance){
   tones_to_json("q_local",&dm_report->iq_tones->q_local[0],80); uart_put_string(",");
   tones_to_json("i_remote",&dm_report->iq_tones->i_remote[0],80); uart_put_string(",");
   tones_to_json("q_remote",&dm_report->iq_tones->q_remote[0],80); uart_put_string(",");
+  uint8array_to_json("hopping_sequence",hopping_sequence,NRF_DM_CHANNEL_MAP_LEN); uart_put_string(",");
 
 
   //- Print tone_sinr
@@ -162,10 +181,11 @@ void nrf_dm_report_to_json(nrf_dm_report_t *dm_report,float distance){
   dist_to_json("phase_slope[mm]",dm_report->distance_estimates.mcpd.phase_slope);uart_put_char(',');
   dist_to_json("rssi_openspace[mm]",dm_report->distance_estimates.mcpd.rssi_openspace);uart_put_char(',');
   dist_to_json("best[mm]",dm_report->distance_estimates.mcpd.best);uart_put_char(',');
-  dist_to_json("highpres[mm]",((int)1000*distance));uart_put_char(',');
+  dist_to_json("highprec[mm]",distance);uart_put_char(',');
 
   //- Status params
   int_to_json("link_loss[dB]",dm_report->link_loss); uart_put_char(',');
+  int_to_json("duration[us]",duration); uart_put_char(',');
   int_to_json("rssi_local[dB]",dm_report->rssi_local); uart_put_char(',');
   int_to_json("rssi_remote[dB]",dm_report->rssi_remote); uart_put_char(',');
   int_to_json("txpwr_local[dB]",dm_report->txpwr_local); uart_put_char(',');
@@ -231,13 +251,15 @@ int main(void)
     debug_stop();
 
     float distance = 0;
+    uint32_t duration = 0;
+    uint8_t hopping_sequence[NRF_DM_CHANNEL_MAP_LEN];
 
     if(status == NRF_DM_STATUS_SUCCESS){
       nrf_dm_populate_report(&dm_report);
       nrf_dm_quality_t quality = nrf_dm_calc(&dm_report);
-
-      //- TODO: Something does not work with this yet, some missing symbols
-      //distance = nrf_dm_high_precision_calc(&dm_report);
+      duration = nrf_dm_get_duration_us(&dm_config);
+      distance = nrf_dm_high_precision_calc(&dm_report);
+      nrf_dm_get_hopping_sequence(&dm_config,hopping_sequence);
 
     }else{
       //- Set quality to 100 if it's a failure
@@ -247,7 +269,7 @@ int main(void)
 
     //- Send report to UART
     uart_init();
-    nrf_dm_report_to_json(&dm_report,distance);
+    nrf_dm_report_to_json(&dm_report,distance,duration,hopping_sequence);
     uart_uninit();
 
   }

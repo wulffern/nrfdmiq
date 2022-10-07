@@ -41,6 +41,7 @@ else
 endif
 
 sid_refl = 685097948
+#sid_init = 685751234
 sid_init = 685701409
 
 current_dir = $(shell pwd)
@@ -53,6 +54,7 @@ ifeq ($(OSFLAG),win)
 	#sid_init = 685965072
 	sid_init = 685369056
 	sid_refl = 685868684
+
 
 else
 ifeq ($(OSFLAG),linux)

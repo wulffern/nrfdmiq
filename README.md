@@ -97,11 +97,15 @@ All the data from that run is in `data/irobot`
 
 Don't expect any, but at the same time, don't be afraid to ask.
 
-## Known issues
+## Changelog
+- Fixed high_precision_calc 
+- Updated to nRF Connect SDK v2.1.0
+- Added hopping sequence 
+- Added duration
 
+## Known issues
 - You need to set the `sid_refl` and `sid_init` in the Makefile to the correct ID's for your
   dev-kits 
-- I don't want the nrf/subsys/dm, so I modify those Kconfig and CMakeList.txt
 - On windows I've seen problems with the common/src/dm.c . That's included with
   a symbolic link, and that does not always work on Windows. The solution is to
   copy the common/src/dm.c file to the reflector/src/ and initiator/src/ directory

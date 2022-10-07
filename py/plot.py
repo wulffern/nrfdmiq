@@ -40,7 +40,7 @@ class report:
         with serial.Serial(com, baudrate=115200, timeout=10) as ser:
             ser.write(bytes('0','utf-8'))
             ret = ser.read_until(bytes("\n",'utf-8'))
-
+            #print(ret)
 
         try:
             self.obj = json.loads(ret.decode('utf-8'))
@@ -58,7 +58,9 @@ class report:
         self.phase_slope = self.obj["phase_slope[mm]"]/1000.0
         self.rssi_openspace = self.obj["rssi_openspace[mm]"]/1000.0
         self.best = self.obj["best[mm]"]/1000.0
-        self.highpres = self.obj["highpres[mm]"]/1000.0
+        self.highprec = self.obj["highprec[mm]"]/1000.0
+        self.duration =  self.obj["duration[us]"]
+        self.hopping_sequence =  self.obj["hopping_sequence"]
 
         self.link_loss = self.obj["link_loss[dB]"]
 
@@ -220,7 +222,7 @@ def impulse(filename,com):
     plt.plot(r.impulse2_x*1e9,abs(r.impulse2)**2)
     plt.ylabel("Impulse Magnitude Squared")
     plt.xlabel("Delay [ns]")
-    plt.title("Distance [m]= %.2f, Link Loss [dB] = %d" % (r.ifft,r.link_loss))
+    plt.title("Distance [m]= %.2f, Link Loss [dB] = %d" % (r.highprec,r.link_loss))
 
     plt.grid()
     plt.show()
