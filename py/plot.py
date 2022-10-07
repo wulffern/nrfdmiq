@@ -58,9 +58,19 @@ class report:
         self.phase_slope = self.obj["phase_slope[mm]"]/1000.0
         self.rssi_openspace = self.obj["rssi_openspace[mm]"]/1000.0
         self.best = self.obj["best[mm]"]/1000.0
-        self.highprec = self.obj["highprec[mm]"]/1000.0
-        self.duration =  self.obj["duration[us]"]
-        self.hopping_sequence =  self.obj["hopping_sequence"]
+        if("highprec" in self.obj):
+            self.highprec = self.obj["highprec[mm]"]/1000.0
+        else:
+            self.highprec = 100
+        if("duration" in self.obj):
+            self.duration =  self.obj["duration[us]"]
+        else:
+            self.duration = -1
+
+        if("hopping_sequence" in self.obj):
+            self.hopping_sequence =  self.obj["hopping_sequence"]
+        else:
+            self.hopping_sequence = list()
 
         self.link_loss = self.obj["link_loss[dB]"]
 
@@ -297,7 +307,13 @@ def impulsedir(dirname,show):
     ax[4].set_xlabel(" Estimated distance [m]")
     plt.tight_layout()
 
-    plt.savefig("media/"+ dirname.replace(os.path.sep,"_") + ".png")
+
+    if( not os.path.exists("media")):
+       os.mkdir("media")
+    try:
+        plt.savefig("media"+ os.path.sep +  dirname.replace(os.path.sep,"_") + ".png")
+    except Exception as e:
+        print(e)
     if(show):
         plt.show()
 
