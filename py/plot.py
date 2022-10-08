@@ -58,11 +58,12 @@ class report:
         self.phase_slope = self.obj["phase_slope[mm]"]/1000.0
         self.rssi_openspace = self.obj["rssi_openspace[mm]"]/1000.0
         self.best = self.obj["best[mm]"]/1000.0
-        if("highprec" in self.obj):
+
+        if("highprec[mm]" in self.obj):
             self.highprec = self.obj["highprec[mm]"]/1000.0
         else:
             self.highprec = 100
-        if("duration" in self.obj):
+        if("duration[us]" in self.obj):
             self.duration =  self.obj["duration[us]"]
         else:
             self.duration = -1
@@ -311,7 +312,7 @@ def impulsedir(dirname,show):
     if( not os.path.exists("media")):
        os.mkdir("media")
     try:
-        plt.savefig("media"+ os.path.sep +  dirname.replace(os.path.sep,"_") + ".png")
+        plt.savefig("media"+ os.path.sep +  dirname.replace("/","_").replace("\\","_") + ".png")
     except Exception as e:
         print(e)
     if(show):
