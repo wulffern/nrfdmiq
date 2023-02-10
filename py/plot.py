@@ -24,6 +24,15 @@ class report:
 
         pass
 
+    def isOk(self):
+        if(self.quality > 0):
+            return False
+
+        sinr = self.sinr_local.sum() + self.sinr_remote.sum()
+        if(sinr > 0):
+            return False
+        return True
+
     def readFromFileOrCom(self,filename = None,com = None):
         
         if(com is not None):
@@ -94,6 +103,8 @@ class report:
 
         l = self.i_local +  np.multiply(1j,self.q_local)
         r = self.i_remote +  np.multiply(1j,self.q_remote)
+        self.remote = r
+        self.local = l
 
         self.transfer2 = np.multiply(l,r)
 
@@ -240,7 +251,7 @@ def impulse(filename,com):
 
 @cli.command()
 @click.argument("dirname")
-@click.option("--show",default=False,help= "Show plot")
+@click.option("--show",is_flag=True,default=False,help= "Show plot")
 def impulsedir(dirname,show):
 
     files = glob.glob(dirname + os.path.sep +"*.json")
@@ -251,8 +262,7 @@ def impulsedir(dirname,show):
         r = report()
         r.readFromFile(f)
         r.load()
-
-        if(r.quality > 0):
+        if(not r.isOk()):
             continue
         r.calc()
         reports.append(r)
@@ -321,7 +331,7 @@ def impulsedir(dirname,show):
 
 @cli.command()
 @click.argument("dirname")
-@click.option("--show",default=False,help= "Show plot")
+@click.option("--show",is_flag=True,default=False,help= "Show plot")
 def magnitudedir(dirname,show):
 
     files = glob.glob(dirname + os.path.sep +"*.json")
@@ -332,8 +342,7 @@ def magnitudedir(dirname,show):
         r = report()
         r.readFromFile(f)
         r.load()
-
-        if(r.quality > 0):
+        if(not r.isOk()):
             continue
         r.calc()
         reports.append(r)
@@ -344,12 +353,14 @@ def magnitudedir(dirname,show):
     ax.append(axe)
     ax[0].set_title(dirname)
     dist_avg = 0
+
+    dist = list()
     for r in reports:
-
         max = np.max(np.abs(r.transfer2))
-        mag = 20*np.log10(np.abs(r.transfer2/max))
-        ax[0].plot(mag)
+        mag = np.abs(r.transfer2)
+        ax[0].plot(20*np.log10(mag/max))
 
+    ax[0].plot(dist)
     ax[0].grid(True)
     ax[0].set_ylabel("Magnitude [dBFS]")
     plt.tight_layout()
