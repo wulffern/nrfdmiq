@@ -330,6 +330,35 @@ def impulsedir(dirname,show):
 
 
 @cli.command()
+@click.option("--filename",default=None)
+def magnitude(filename):
+
+    r = report()
+    r.readFromFile(filename)
+    r.load()
+    if(not r.isOk()):
+        print(f"Could not read {filename}")
+    r.calc()
+
+    fig, axe = plt.subplots(1,1,figsize=(16,9))
+
+    ax = list()
+    ax.append(axe)
+    ax[0].set_title(filename)
+    dist_avg = 0
+
+    dist = list()
+    max = np.max(np.abs(r.transfer2))
+    mag = np.abs(r.transfer2)
+    ax[0].plot(20*np.log10(mag/max))
+
+    ax[0].plot(dist)
+    ax[0].grid(True)
+    ax[0].set_ylabel("Magnitude [dBFS]")
+    plt.tight_layout()
+    plt.show()
+
+@cli.command()
 @click.argument("dirname")
 @click.option("--show",is_flag=True,default=False,help= "Show plot")
 def magnitudedir(dirname,show):
@@ -365,7 +394,6 @@ def magnitudedir(dirname,show):
     ax[0].set_ylabel("Magnitude [dBFS]")
     plt.tight_layout()
 
-    plt.savefig("media/"+ dirname.replace(os.path.sep,"_mag_") + ".png")
     if(show):
         plt.show()
 
