@@ -50,7 +50,7 @@ int main(void)
 
   dm_config = NRF_DM_DEFAULT_CONFIG;
   dm_config.role            = NRF_DM_ROLE_REFLECTOR;
-  dm_config.access_address  = 0x44ddaafa;
+  dm_config.rng_seed        = 0x44ddaafa;
 
   while (1)
   {

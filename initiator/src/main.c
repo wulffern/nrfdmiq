@@ -66,6 +66,15 @@ void uart_uninit(void){
     nrfx_uarte_uninit(&instance);
 }
 
+int uart_cbprint(int ch, void * ctx){
+  nrfx_uarte_tx(&instance, (uint8_t*) &ch, 1, NRFX_UARTE_TX_BLOCKING);
+}
+
+void uart_put_char(uint8_t ch)
+{
+  nrfx_uarte_tx(&instance, &ch, 1, NRFX_UARTE_TX_BLOCKING);
+}
+
 void uart_put_string(const char * string)
 {
   while (*string != '\0')
@@ -74,18 +83,11 @@ void uart_put_string(const char * string)
   }
 }
 
-int uart_cbprint(int ch, void * ctx){
-  nrfx_uarte_tx(&instance, &ch, 1);
-}
-
-void uart_put_char(uint8_t ch)
-{
-  nrfx_uarte_tx(&instance, &ch, 1);
-}
-
 bool uart_chars_available(void)
 {
-  return nrfx_uarte_rx_ready(&instance);
+  size_t rx_amount;
+  nrfx_uarte_rx_ready(&instance, &rx_amount);
+  return rx_amount > 0;
 }
 
 void uart_get_char(uint8_t * p_ch)
@@ -211,7 +213,7 @@ int main(void)
 
   dm_config = NRF_DM_DEFAULT_CONFIG;
   dm_config.role            = NRF_DM_ROLE_INITIATOR;
-  dm_config.access_address  = 0x44ddaafa;
+  dm_config.rng_seed        = 0x44ddaafa;
 
   while (1)
   {
