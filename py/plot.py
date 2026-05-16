@@ -20,11 +20,15 @@ class report:
         self.ifft = -1
         self.phase_slope = -1
         self.best = -1
+        self.timeout_us = -1
+        self.timed_out = False
         self.c =299792458
 
         pass
 
     def isOk(self):
+        if(self.timed_out):
+            return False
         if(self.quality > 0):
             return False
 
@@ -76,6 +80,16 @@ class report:
             self.duration =  self.obj["duration[us]"]
         else:
             self.duration = -1
+
+        if("timeout[us]" in self.obj):
+            self.timeout_us = self.obj["timeout[us]"]
+        else:
+            self.timeout_us = -1
+
+        if("timed_out" in self.obj):
+            self.timed_out = bool(self.obj["timed_out"])
+        else:
+            self.timed_out = False
 
         if("hopping_sequence" in self.obj):
             self.hopping_sequence =  self.obj["hopping_sequence"]
@@ -202,6 +216,9 @@ def cli():
 def save(filename,com):
     r = report()
     r.readFromCom(com)
+    r.load()
+    if r.timed_out:
+        return
     r.save(filename)
 
 @cli.command()
@@ -218,11 +235,14 @@ def msave(dirname,com,count):
         r = report()
         r.readFromCom(com)
         r.load()
+        if r.timed_out:
+            continue
+
         sinr_r = r.sinr_remote.sum()
         sinr_l = r.sinr_local.sum()
 
         print("Distance [m]: %.2f, Quality : %d, SINR Remote : %d, SINR Local : %d" % (r.ifft,r.quality,sinr_r,sinr_l))
-        if(r.quality == 0 and sinr_r < 5 and sinr_l < 5 ):
+        if(r.quality == 0 and sinr_r < 5 and sinr_l < 5):
             r.save(dirname + os.path.sep +  fname)
         time.sleep(0.1)
 
@@ -237,6 +257,8 @@ def impulse(filename,com):
 
     if(r.quality > 1 ):
         print("Ignoring, bad quality = %d" %r.quality)
+        return -1
+    if(r.timed_out):
         return -1
     r.calcTransfer2()
     r.calcImpulse2()

@@ -167,7 +167,7 @@ void sinr_to_json(char * str, nrf_dm_sinr_indicator_t *array,uint32_t length){
   uart_put_string("]");
 }
 
-void nrf_dm_report_to_json(nrf_dm_report_t *dm_report,float distance,int32_t duration, uint8_t *hopping_sequence){
+void nrf_dm_report_to_json(nrf_dm_report_t *dm_report,float distance,int32_t duration, uint32_t timeout_us, bool timed_out, uint8_t *hopping_sequence){
   uart_put_string("{");
 
   //- Print tones
@@ -194,6 +194,8 @@ void nrf_dm_report_to_json(nrf_dm_report_t *dm_report,float distance,int32_t dur
   //- Status params
   int_to_json("link_loss[dB]",dm_report->link_loss); uart_put_char(',');
   int_to_json("duration[us]",duration); uart_put_char(',');
+  int_to_json("timeout[us]",timeout_us); uart_put_char(',');
+  int_to_json("timed_out",timed_out ? 1 : 0); uart_put_char(',');
   int_to_json("rssi_local[dB]",dm_report->rssi_local); uart_put_char(',');
   int_to_json("rssi_remote[dB]",dm_report->rssi_remote); uart_put_char(',');
   int_to_json("txpwr_local[dB]",dm_report->txpwr_local); uart_put_char(',');
@@ -254,13 +256,15 @@ int main(void)
     //- Execute a ranging
     nrf_dm_status_t status = nrf_dm_configure(&dm_config);
     debug_start();
-    uint32_t timeout_us = 0.5e6;
+    uint32_t timeout_us = 0.1e6;
     status     = nrf_dm_proc_execute(timeout_us);
     debug_stop();
 
     float distance = 0;
     uint32_t duration = 0;
     uint8_t hopping_sequence[NRF_DM_CHANNEL_MAP_LEN];
+
+    bool timed_out = (status == NRF_DM_STATUS_EVENT_FAIL_TIMEOUT);
 
     if(status == NRF_DM_STATUS_SUCCESS){
       nrf_dm_populate_report(&dm_report);
@@ -277,7 +281,7 @@ int main(void)
 
     //- Send report to UART
     uart_init();
-    nrf_dm_report_to_json(&dm_report,distance,duration,hopping_sequence);
+    nrf_dm_report_to_json(&dm_report,distance,duration,timeout_us,timed_out,hopping_sequence);
     uart_uninit();
 
   }
