@@ -28,12 +28,12 @@
 
 //#include <zephyr.h>
 //#include <init.h>
-#include <nrf.h>
+#include <mdk/nrf.h>
 #include <nrfx.h>
 #include "nrf_dm.h"
-#include "nrfx_config.h"
-#include "nrfx_clock.h"
-#include "nrfx_uarte.h"
+#include <nrfx_config.h>
+#include <nrfx_clock.h>
+#include <nrfx_uarte.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -54,12 +54,15 @@
 //------------------------------------------------------------------
 // Setup UARTE to PC
 //------------------------------------------------------------------
-static nrfx_uarte_t instance = NRFX_UARTE_INSTANCE(0);
+static nrfx_uarte_t instance = NRFX_UARTE_INSTANCE(NRF_UARTE0);
+static uint8_t uart_rx_byte;
 
 void uart_init(void){
     nrfx_uarte_config_t config = NRFX_UARTE_DEFAULT_CONFIG(TXD_PIN, RXD_PIN);
     config.baudrate            = NRF_UARTE_BAUDRATE_115200;
     nrfx_uarte_init(&instance, &config, NULL);
+    nrfx_uarte_rx_buffer_set(&instance, &uart_rx_byte, 1);
+    nrfx_uarte_rx_enable(&instance, NRFX_UARTE_RX_ENABLE_STOP_ON_END);
 }
 
 void uart_uninit(void){
@@ -85,15 +88,18 @@ void uart_put_string(const char * string)
 
 bool uart_chars_available(void)
 {
-  size_t rx_amount;
-  nrfx_uarte_rx_ready(&instance, &rx_amount);
-  return rx_amount > 0;
+  size_t rx_amount = 0;
+
+  return (nrfx_uarte_rx_ready(&instance, &rx_amount) == 0) && (rx_amount > 0);
 }
 
 void uart_get_char(uint8_t * p_ch)
 {
   nrfx_uarte_errorsrc_get(&instance);
-  nrfx_uarte_rx(&instance, p_ch, 1);
+  while (nrfx_uarte_rx_ready(&instance, NULL) != 0) {
+  }
+  *p_ch = uart_rx_byte;
+  nrfx_uarte_rx_buffer_set(&instance, &uart_rx_byte, 1);
 }
 
 void dist_to_json(char *str, float f){

@@ -32,6 +32,9 @@
 
 
 
+/* Required by prebuilt libnrf_dm.a when CONFIG_CPP is disabled. */
+void *__dso_handle;
+
 #define DBGPIN_1  30
 #define DBGPIN_2  31
 

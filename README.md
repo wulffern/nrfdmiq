@@ -102,6 +102,7 @@ Don't expect any, but at the same time, don't be afraid to ask.
 - Updated to nRF Connect SDK v2.1.0
 - Added hopping sequence 
 - Added duration
+- Updated to nRF Connect SDK v3.3.0
 
 ## Known issues
 - You need to set the `sid_refl` and `sid_init` in the Makefile to the correct ID's for your

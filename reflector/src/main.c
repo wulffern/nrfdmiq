@@ -28,12 +28,11 @@
 
 //#include <zephyr.h>
 //#include <init.h>
-#include <nrf.h>
+#include <mdk/nrf.h>
 #include <nrfx.h>
 #include "nrf_dm.h"
-#include <nrfx_ppi.h>
-#include "nrfx_config.h"
-#include "nrfx_clock.h"
+#include <nrfx_config.h>
+#include <nrfx_clock.h>
 
 #include "dm.c"
 

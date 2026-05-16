@@ -40,8 +40,9 @@ else
 
 endif
 
-sid_refl = 685097948
-#sid_init = 685751234
+
+# Set to your DK serial numbers (see: nrfutil device list)
+sid_refl = 685751234
 sid_init = 685701409
 
 current_dir = $(shell pwd)
@@ -68,8 +69,8 @@ endif
 endif
 
 first:
-	cd reflector; west build -b nrf52833dk_nrf52833 -- -DCONF_FILE=prj.conf
-	cd initiator; west build -b nrf52833dk_nrf52833 -- -DCONF_FILE=prj.conf
+	cd reflector; west build -b "nrf52833dk/nrf52833" -- -DCONF_FILE=prj.conf
+	cd initiator; west build -b "nrf52833dk/nrf52833" -- -DCONF_FILE=prj.conf
 
 flashr:
 	cd reflector; west flash -i ${sid_refl}
@@ -81,7 +82,11 @@ flashi:
 
 
 reset:
-	${nrfjprog} -p -s ${SID} && ${nrfjprog} -r -s ${SID}
+	@if command -v $(nrfjprog) >/dev/null 2>&1; then \
+		$(nrfjprog) -p -s $(SID) && $(nrfjprog) -r -s $(SID); \
+	else \
+		nrfutil device reset --serial-number $(SID); \
+	fi
 
 
 doc:
