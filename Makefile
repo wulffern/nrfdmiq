@@ -68,9 +68,16 @@ else
 endif
 endif
 
+INITIATOR_TIMEOUT_US ?= 50000
+REFLECTOR_TIMEOUT_US ?= 500000
+
 first:
-	cd reflector; west build -b "nrf52833dk/nrf52833" -- -DCONF_FILE=prj.conf
-	cd initiator; west build -b "nrf52833dk/nrf52833" -- -DCONF_FILE=prj.conf
+	cd reflector; west build -b "nrf52833dk/nrf52833" -- -DCONF_FILE=prj.conf \
+		-DDM_REFLECTOR_TIMEOUT_US=$(REFLECTOR_TIMEOUT_US) -DDM_INITIATOR_TIMEOUT_US=$(INITIATOR_TIMEOUT_US)
+	cd initiator; west build -b "nrf52833dk/nrf52833" -- -DCONF_FILE=prj.conf \
+		-DDM_INITIATOR_TIMEOUT_US=$(INITIATOR_TIMEOUT_US) -DDM_REFLECTOR_TIMEOUT_US=$(REFLECTOR_TIMEOUT_US)
+
+build: first
 
 flashr:
 	cd reflector; west flash -i ${sid_refl}

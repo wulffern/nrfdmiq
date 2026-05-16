@@ -35,6 +35,7 @@
 #include <nrfx_clock.h>
 
 #include "dm.c"
+#include "dm_timeout.h"
 
 static nrf_dm_config_t dm_config;
 
@@ -56,7 +57,7 @@ int main(void)
 
     nrf_dm_status_t status  = nrf_dm_configure(&dm_config);
     debug_start();
-    uint32_t timeout_us = 0.1e6;
+    uint32_t timeout_us = DM_REFLECTOR_TIMEOUT_US;
     status     = nrf_dm_proc_execute(timeout_us);
     debug_stop();
 

@@ -2,6 +2,8 @@
 
 import click
 import serial
+from typing import Optional
+from rich.console import Console
 import numpy as np
 import matplotlib.pyplot as plt
 import json
@@ -12,6 +14,121 @@ import time
 import re
 import pandas as pd
 
+console = Console()
+
+_msave_header_printed = False
+_msave_last_status = None
+_MSAVE_TABLE_WIDTH = 79
+_HIGHPREC_IFFT_MAX_DELTA_M = 1.5
+
+
+def _msave_rule(style: str = "dim") -> None:
+    console.print("-" * _MSAVE_TABLE_WIDTH, style=style, highlight=False)
+
+
+def _msave_cell(text: str, width: int, style: Optional[str] = None) -> str:
+    padded = f"{text:>{width}}"
+    if style:
+        return f"[{style}]{padded}[/]"
+    return padded
+
+
+def _msave_dist(val: float, width: int = 8) -> str:
+    return f"{val:{width}.2f}"
+
+
+def msave_status(r: "report") -> str:
+    """Classify one ranging attempt for logging and save decisions."""
+    if r.timed_out:
+        return "TIMEOUT"
+    if r.quality != 0:
+        return "SYNC" if r.ifft <= 0.01 and r.best <= 0.01 else "FAIL"
+    sinr_r = r.sinr_remote.sum()
+    sinr_l = r.sinr_local.sum()
+    if sinr_r >= 5 or sinr_l >= 5:
+        return "SINR"
+    if r.highprec < 0.01 or abs(r.highprec - r.ifft) > _HIGHPREC_IFFT_MAX_DELTA_M:
+        return "WARN"
+    return "OK"
+
+
+def msave_should_save(r: "report") -> bool:
+    return msave_status(r) == "OK"
+
+
+def log_msave_measurement(r: "report") -> bool:
+    """Print one aligned ranging row. Returns True if the sample would be saved."""
+    global _msave_header_printed, _msave_last_status
+    w = 8
+    status = msave_status(r)
+    status_styles = {
+        "OK": "bold green",
+        "TIMEOUT": "bold red",
+        "SYNC": "yellow",
+        "FAIL": "yellow",
+        "SINR": "yellow",
+        "WARN": "bold yellow",
+    }
+
+    if not _msave_header_printed:
+        console.print(
+            f"[bold]{'ifft':>{w}}  {'best':>{w}}  {'phase_sl':>{w}}  {'highprec':>{w}}  "
+            f"{'Quality':>7}  {'SINR R':>6}  {'SINR L':>6}  {'Status':>7}[/]"
+        )
+        _msave_header_printed = True
+    elif _msave_last_status and status != _msave_last_status:
+        ok_prev = _msave_last_status == "OK"
+        ok_cur = status == "OK"
+        if ok_prev != ok_cur:
+            _msave_rule("dim")
+    _msave_last_status = status
+
+    if status in ("TIMEOUT", "SYNC"):
+        ifft = best = phase_sl = highprec = _msave_cell("--", w, "dim")
+        sinr_r = _msave_cell("-", 6, "dim")
+        sinr_l = _msave_cell("-", 6, "dim")
+        row_style = None
+    else:
+        ifft = _msave_dist(r.ifft, w)
+        best = _msave_dist(r.best, w)
+        phase_sl = _msave_dist(r.phase_slope, w)
+        highprec = _msave_dist(r.highprec, w)
+        sinr_r = f"{r.sinr_remote.sum():6.0f}"
+        sinr_l = f"{r.sinr_local.sum():6.0f}"
+        row_style = "green" if status == "OK" else ("yellow" if status == "WARN" else None)
+
+    status_cell = _msave_cell(status, 7, status_styles.get(status, "white"))
+
+    console.print(
+        f"{ifft}  {best}  {phase_sl}  {highprec}  {r.quality:7d}  "
+        f"{sinr_r}  {sinr_l}  {status_cell}",
+        style=row_style,
+        highlight=False,
+    )
+    return msave_should_save(r)
+
+
+def read_measurement(com: str) -> "report":
+    r = report()
+    r.readFromCom(com)
+    r.load()
+    return r
+
+
+def print_msave_summary(counts: dict) -> None:
+    total = sum(counts.values())
+    if total == 0:
+        return
+    _msave_rule("bold")
+    console.print("[bold]Summary[/]")
+    for key in ("OK", "WARN", "TIMEOUT", "SYNC", "SINR", "FAIL"):
+        n = counts.get(key, 0)
+        if n:
+            console.print(f"  {key:7s}: {n:4d}  ({100 * n / total:5.1f}%)")
+    ok = counts.get("OK", 0)
+    console.print(f"  saved : {ok:4d}  ({100 * ok / total:5.1f}%)")
+
+
 class report:
 
     def __init__(self):
@@ -21,6 +138,7 @@ class report:
         self.phase_slope = -1
         self.best = -1
         self.timeout_us = -1
+        self.timeout_reflector_us = -1
         self.timed_out = False
         self.c =299792458
 
@@ -81,10 +199,17 @@ class report:
         else:
             self.duration = -1
 
-        if("timeout[us]" in self.obj):
+        if("timeout_initiator[us]" in self.obj):
+            self.timeout_us = self.obj["timeout_initiator[us]"]
+        elif("timeout[us]" in self.obj):
             self.timeout_us = self.obj["timeout[us]"]
         else:
             self.timeout_us = -1
+
+        if("timeout_reflector[us]" in self.obj):
+            self.timeout_reflector_us = self.obj["timeout_reflector[us]"]
+        else:
+            self.timeout_reflector_us = -1
 
         if("timed_out" in self.obj):
             self.timed_out = bool(self.obj["timed_out"])
@@ -224,27 +349,47 @@ def save(filename,com):
 @cli.command()
 @click.argument("dirname")
 @click.option("--com",default=None,help= "Which serial port to read")
-@click.option("--count",default=10,help= "")
-def msave(dirname,com,count):
+@click.option("--count",default=10,help= "Number of measurements to attempt")
+@click.option(
+    "--interval",
+    default=0.1,
+    show_default=True,
+    help="Seconds between triggers (increase if bursts are followed by long gaps)",
+)
+@click.option(
+    "--retry",
+    default=0,
+    show_default=True,
+    help="Extra attempts per sample on TIMEOUT/SYNC before logging",
+)
+def msave(dirname, com, count, interval, retry):
 
-    if( not os.path.exists(dirname)):
+    global _msave_header_printed, _msave_last_status
+    _msave_header_printed = False
+    _msave_last_status = None
+    counts = {}
+
+    if not os.path.exists(dirname):
         os.makedirs(dirname)
 
-    for i in range(1,count):
+    for _ in range(count):
         fname = str(datetime.datetime.now().timestamp()) + ".json"
-        r = report()
-        r.readFromCom(com)
-        r.load()
-        if r.timed_out:
-            continue
+        attempts = 1 + retry
+        r = None
+        for attempt in range(attempts):
+            r = read_measurement(com)
+            st = msave_status(r)
+            if st in ("OK", "WARN") or attempt == attempts - 1:
+                break
+            time.sleep(interval)
 
-        sinr_r = r.sinr_remote.sum()
-        sinr_l = r.sinr_local.sum()
+        status = msave_status(r)
+        counts[status] = counts.get(status, 0) + 1
+        if log_msave_measurement(r):
+            r.save(dirname + os.path.sep + fname)
+        time.sleep(interval)
 
-        print("Distance [m]: %.2f, Quality : %d, SINR Remote : %d, SINR Local : %d" % (r.ifft,r.quality,sinr_r,sinr_l))
-        if(r.quality == 0 and sinr_r < 5 and sinr_l < 5):
-            r.save(dirname + os.path.sep +  fname)
-        time.sleep(0.1)
+    print_msave_summary(counts)
 
 @cli.command()
 @click.option("--filename",default=None)
@@ -256,7 +401,7 @@ def impulse(filename,com):
     r.load()
 
     if(r.quality > 1 ):
-        print("Ignoring, bad quality = %d" %r.quality)
+        console.print(f"[yellow]Ignoring, bad quality = {r.quality}[/]")
         return -1
     if(r.timed_out):
         return -1
@@ -359,7 +504,7 @@ def magnitude(filename):
     r.readFromFile(filename)
     r.load()
     if(not r.isOk()):
-        print(f"Could not read {filename}")
+        console.print(f"[red]Could not read {filename}[/]")
     r.calc()
 
     fig, axe = plt.subplots(1,1,figsize=(16,9))

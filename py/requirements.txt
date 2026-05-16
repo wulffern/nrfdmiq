@@ -1,0 +1,6 @@
+click
+matplotlib
+numpy
+pandas
+pyserial
+rich

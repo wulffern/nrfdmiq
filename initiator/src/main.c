@@ -49,6 +49,7 @@
 
 // Common functions, probably need to copy this file if you're on windows
 #include "dm.c"
+#include "dm_timeout.h"
 
 
 //------------------------------------------------------------------
@@ -195,6 +196,8 @@ void nrf_dm_report_to_json(nrf_dm_report_t *dm_report,float distance,int32_t dur
   int_to_json("link_loss[dB]",dm_report->link_loss); uart_put_char(',');
   int_to_json("duration[us]",duration); uart_put_char(',');
   int_to_json("timeout[us]",timeout_us); uart_put_char(',');
+  int_to_json("timeout_initiator[us]",timeout_us); uart_put_char(',');
+  int_to_json("timeout_reflector[us]",DM_REFLECTOR_TIMEOUT_US); uart_put_char(',');
   int_to_json("timed_out",timed_out ? 1 : 0); uart_put_char(',');
   int_to_json("rssi_local[dB]",dm_report->rssi_local); uart_put_char(',');
   int_to_json("rssi_remote[dB]",dm_report->rssi_remote); uart_put_char(',');
@@ -256,7 +259,7 @@ int main(void)
     //- Execute a ranging
     nrf_dm_status_t status = nrf_dm_configure(&dm_config);
     debug_start();
-    uint32_t timeout_us = 0.1e6;
+    uint32_t timeout_us = DM_INITIATOR_TIMEOUT_US;
     status     = nrf_dm_proc_execute(timeout_us);
     debug_stop();
 

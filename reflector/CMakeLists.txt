@@ -31,5 +31,16 @@ cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(reflector)
 
+if(NOT DEFINED DM_REFLECTOR_TIMEOUT_US)
+  set(DM_REFLECTOR_TIMEOUT_US 500000)
+endif()
+if(NOT DEFINED DM_INITIATOR_TIMEOUT_US)
+  set(DM_INITIATOR_TIMEOUT_US 50000)
+endif()
 
+zephyr_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../common/include)
+target_compile_definitions(app PRIVATE
+  DM_REFLECTOR_TIMEOUT_US=${DM_REFLECTOR_TIMEOUT_US}
+  DM_INITIATOR_TIMEOUT_US=${DM_INITIATOR_TIMEOUT_US}
+)
 target_sources(app PRIVATE  src/main.c)
