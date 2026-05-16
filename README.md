@@ -30,7 +30,7 @@ You need [Nordic Connect
 SDK](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/index.html)
 
 - Via the nRF Connect for Desktop open the Toolchain manager
-- Install NRF Connect SDK. This repo is tested with v2.1.0 and v3.3.0
+- Install NRF Connect SDK. This repo is tested with v3.3.0
 - In the Toolchain Manager, open command prompt 
 - In the command prompt, make sure the environment is loaded, for example `c:\ncs\v2.0.0\zephyr\zephyr-env.cmd`
 - Set `sid_refl` and `sid_init` in the `Makefile` to your DK serial numbers (`nrfutil device list`)
@@ -156,7 +156,6 @@ Don't expect any, but at the same time, don't be afraid to ask.
 
 ## Changelog
 - Fixed high_precision_calc 
-- Updated to nRF Connect SDK v2.1.0
 - Added hopping sequence 
 - Added duration
 - Updated to nRF Connect SDK v3.3.0
